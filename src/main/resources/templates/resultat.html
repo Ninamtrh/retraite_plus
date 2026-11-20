@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Résultat | Retraite+</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" th:href="@{/css/style.css}"></head>
+<body>
+<nav class="navbar navbar-dark app-nav"><div class="container"><a class="navbar-brand fw-bold" href="/">Retraite<span>+</span></a><a class="btn btn-sm btn-outline-light" href="/">Nouvelle simulation</a></div></nav>
+<main class="container py-5">
+  <div class="hero mb-4"><div class="eyebrow">RÉSULTAT DE SIMULATION</div><h1 th:text="'Estimation de ' + ${personName}">Estimation</h1><p class="mb-0">Voici le détail du calcul de la retraite de base, à partir des données saisies.</p></div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="metric"><div class="metric-label">Pension mensuelle estimée</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.monthlyPension,1,2)} + ' €'">0 €</div><div class="metric-note">Avant prélèvements sociaux</div></div></div>
+    <div class="col-md-4"><div class="metric"><div class="metric-label">Pension annuelle estimée</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.annualPension,1,2)} + ' €'">0 €</div><div class="metric-note">Sur 12 mois</div></div></div>
+    <div class="col-md-4"><div class="metric"><div class="metric-label">Taux après décote</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.adjustedRate * 100,1,2)} + ' %'">50 %</div><div class="metric-note">Taux de liquidation utilisé</div></div></div>
+  </div>
+  <div class="row g-4">
+    <div class="col-lg-7"><section class="panel"><h2>Comprendre le résultat</h2><div class="table-responsive"><table class="table align-middle"><tbody>
+      <tr><th>SAM annuel</th><td class="text-end" th:text="${#numbers.formatDecimal(form.sam,1,2)} + ' €'"></td></tr>
+      <tr><th>Taux après décote</th><td class="text-end" th:text="${#numbers.formatDecimal(result.adjustedRate * 100,1,2)} + ' %'"></td></tr>
+      <tr><th>Proratisation</th><td class="text-end" th:text="${form.acquiredQuarters} + ' / ' + ${form.requiredQuarters}"></td></tr>
+      <tr><th>Décote paramétrée</th><td class="text-end" th:text="${#numbers.formatDecimal(result.decotePercent,1,2)} + ' %'"></td></tr>
+      <tr><th>Surcote paramétrée</th><td class="text-end" th:text="${#numbers.formatDecimal(result.surcotePercent,1,2)} + ' %'"></td></tr>
+      <tr><th>Majoration enfants</th><td class="text-end" th:text="${#numbers.formatDecimal(result.childrenBonusPercent,1,2)} + ' %'"></td></tr>
+    </tbody></table></div>
+    <h3 class="mt-4">Étapes du calcul</h3><ol class="explanations"><li th:each="line : ${result.explanations}" th:text="${line}"></li></ol>
+    </section></div>
+    <div class="col-lg-5"><section class="panel"><h2>Visualisation</h2><p class="muted">Répartition des paramètres utilisés dans la simulation.</p><canvas id="breakdownChart" height="240"></canvas><div class="alert alert-warning mt-3 small mb-0">La simulation suppose que les paramètres saisis sont corrects et que les conditions de décote/surcote sont réunies.</div></section></div>
+  </div>
+  <section class="panel mt-4"><h2>À vérifier avant toute décision</h2><ul><li>Âge légal de départ applicable à l'année et au trimestre de naissance.</li><li>Durée d'assurance requise pour le taux plein de la génération.</li><li>Trimestres cotisés, assimilés et majorations de durée d'assurance.</li><li>Calcul du SAM à partir des salaires annuels revalorisés et plafonnés.</li><li>Conditions précises de décote, surcote et majoration pour enfants.</li></ul><a class="btn btn-primary mt-2" href="/">Effectuer une autre simulation</a></section>
+  <p class="small muted mt-4">Retraite+ est un prototype pédagogique. Pour une estimation opposable à votre situation, utilisez les services officiels de l'Assurance retraite.</p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+const decote = Number([[${result.decotePercent}]]);
+const surcote = Number([[${result.surcotePercent}]]);
+const children = Number([[${result.childrenBonusPercent}]]);
+new Chart(document.getElementById('breakdownChart'), {
+ type:'bar',
+ data:{labels:['Décote','Surcote','Majoration enfants'],datasets:[{label:'Pourcentage',data:[decote,surcote,children],borderRadius:8}]},
+ options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,title:{display:true,text:'Pourcentage (%)'}}}}
+});
+</script>
+</body></html>
