@@ -1,0 +1,5 @@
+# Coefficients de revalorisation des pensions de base deja liquidees (date d'effet ; coefficient)
+# Sources : circulaires Cnav 2024-39 (1,022 au 01/01/2025) et 2025-29 (1,009 au 01/01/2026)
+date;coefficient
+2025-01-01;1.022
+2026-01-01;1.009

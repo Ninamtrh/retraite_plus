@@ -3,39 +3,220 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Résultat | Retraite+</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" th:href="@{/css/style.css}"></head>
 <body>
-<nav class="navbar navbar-dark app-nav"><div class="container"><a class="navbar-brand fw-bold" href="/">Retraite<span>+</span></a><a class="btn btn-sm btn-outline-light" href="/">Nouvelle simulation</a></div></nav>
+<nav class="navbar navbar-dark app-nav no-print"><div class="container">
+  <a class="navbar-brand fw-bold" href="/">Retraite<span>+</span></a>
+  <div><button class="btn btn-sm btn-outline-light me-2" onclick="window.print()">Imprimer / PDF</button>
+  <a class="btn btn-sm btn-light" href="/">Nouvelle simulation</a></div>
+</div></nav>
 <main class="container py-5">
-  <div class="hero mb-4"><div class="eyebrow">RÉSULTAT DE SIMULATION</div><h1 th:text="'Estimation de ' + ${personName}">Estimation</h1><p class="mb-0">Voici le détail du calcul de la retraite de base, à partir des données saisies.</p></div>
+
+  <!-- En-tête -->
+  <div class="hero mb-4">
+    <div class="eyebrow">ESTIMATION DE RETRAITE</div>
+    <h1 th:text="${r.nomComplet != '' ? r.nomComplet : 'Salarié'}">Nom</h1>
+    <p class="mb-0">
+      Né(e) le <b th:text="${@fmt.date(r.dateNaissance)}"></b> ·
+      départ au <b th:text="${@fmt.date(r.dateDepart)}"></b> à <b th:text="${r.ageAuDepart}"></b> ·
+      <span th:text="${r.motifDepart}"></span>
+    </p>
+  </div>
+
+  <div th:if="${!r.departPossible}" class="alert alert-danger fw-semibold" th:text="${r.motifDepart}"></div>
+
+  <!-- Chiffres clés -->
   <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="metric"><div class="metric-label">Pension mensuelle estimée</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.monthlyPension,1,2)} + ' €'">0 €</div><div class="metric-note">Avant prélèvements sociaux</div></div></div>
-    <div class="col-md-4"><div class="metric"><div class="metric-label">Pension annuelle estimée</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.annualPension,1,2)} + ' €'">0 €</div><div class="metric-note">Sur 12 mois</div></div></div>
-    <div class="col-md-4"><div class="metric"><div class="metric-label">Taux après décote</div><div class="metric-value" th:text="${#numbers.formatDecimal(result.adjustedRate * 100,1,2)} + ' %'">50 %</div><div class="metric-note">Taux de liquidation utilisé</div></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><div class="metric-label">Total brut mensuel</div>
+      <div class="metric-value" th:text="${@fmt.eur(r.totalBrutMensuel)}"></div><div class="metric-note">Base + complémentaire</div></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><div class="metric-label">Total net mensuel</div>
+      <div class="metric-value" th:text="${@fmt.eur(r.totalNetMensuel)}"></div><div class="metric-note">Après CSG, CRDS, CASA · avant impôt</div></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><div class="metric-label">Retraite de base (CNAV)</div>
+      <div class="metric-value small-value" th:text="${@fmt.eur(r.baseMensuelle)}"></div><div class="metric-note" th:text="'Taux ' + ${@fmt.pct(r.tauxPct)} + (${r.tauxPlein} ? ' (taux plein)' : ' (décote)')"></div></div></div>
+    <div class="col-6 col-lg-3"><div class="metric"><div class="metric-label">Complémentaire Agirc-Arrco</div>
+      <div class="metric-value small-value" th:text="${@fmt.eur(r.complementaireMensuelle)}"></div><div class="metric-note" th:text="${@fmt.num(r.pointsTotal)} + ' points'"></div></div></div>
   </div>
+
+  <div th:if="${r.departPasse}" class="alert alert-info">
+    Départ déjà intervenu : montant revalorisé au <b th:text="${@fmt.date(r.dateCalcul)}"></b> :
+    <b th:text="${@fmt.eur(r.totalBrutMensuelActuel)}"></b> brut par mois
+    (base <span th:text="${@fmt.eur(r.baseMensuelleActuelle)}"></span>, Agirc-Arrco
+    <span th:text="${@fmt.eur(r.complementaireMensuelleActuelle)}"></span> avec un point à
+    <span th:text="${r.valeurPointActuelle}"></span> €).
+  </div>
+
+  <div th:if="${!r.alertes.isEmpty()}" class="panel mb-4 border-warning">
+    <h2>Points d'attention</h2>
+    <ul class="mb-0"><li th:each="a : ${r.alertes}" th:text="${a}"></li></ul>
+  </div>
+
   <div class="row g-4">
-    <div class="col-lg-7"><section class="panel"><h2>Comprendre le résultat</h2><div class="table-responsive"><table class="table align-middle"><tbody>
-      <tr><th>SAM annuel</th><td class="text-end" th:text="${#numbers.formatDecimal(form.sam,1,2)} + ' €'"></td></tr>
-      <tr><th>Taux après décote</th><td class="text-end" th:text="${#numbers.formatDecimal(result.adjustedRate * 100,1,2)} + ' %'"></td></tr>
-      <tr><th>Proratisation</th><td class="text-end" th:text="${form.acquiredQuarters} + ' / ' + ${form.requiredQuarters}"></td></tr>
-      <tr><th>Décote paramétrée</th><td class="text-end" th:text="${#numbers.formatDecimal(result.decotePercent,1,2)} + ' %'"></td></tr>
-      <tr><th>Surcote paramétrée</th><td class="text-end" th:text="${#numbers.formatDecimal(result.surcotePercent,1,2)} + ' %'"></td></tr>
-      <tr><th>Majoration enfants</th><td class="text-end" th:text="${#numbers.formatDecimal(result.childrenBonusPercent,1,2)} + ' %'"></td></tr>
-    </tbody></table></div>
-    <h3 class="mt-4">Étapes du calcul</h3><ol class="explanations"><li th:each="line : ${result.explanations}" th:text="${line}"></li></ol>
+    <!-- Conditions de départ -->
+    <div class="col-lg-6"><section class="panel h-100">
+      <h2>1 · Âge et conditions de départ</h2>
+      <table class="table table-sm align-middle mt-3"><tbody>
+        <tr><th>Âge légal de la génération</th><td class="text-end" th:text="${r.ageLegal} + ' (le ' + ${@fmt.date(r.dateAgeLegal)} + ')'"></td></tr>
+        <tr><th>Durée requise pour le taux plein</th><td class="text-end" th:text="${r.dureeRequise} + ' trimestres'"></td></tr>
+        <tr><th>Âge du taux plein automatique</th><td class="text-end" th:text="${r.ageTauxPlein} + ' (le ' + ${@fmt.date(r.dateAgeTauxPlein)} + ')'"></td></tr>
+        <tr><th>Retraite anticipée carrière longue</th><td class="text-end" th:text="${r.carriereLongueEligible} ? 'Oui' : 'Non'"></td></tr>
+      </tbody></table>
+      <p class="small mb-1"><b>Contrôle carrière longue :</b> <span th:text="${r.carriereLongueDetail}"></span></p>
+      <ul class="small mb-0"><li th:each="v : ${r.carriereLongueVerifications}" th:text="${v}"></li></ul>
+      <p th:if="${r.suspensionAppliquee}" class="small text-primary mt-2 mb-0">Règles de la suspension de la réforme (LFSS 2026) appliquées.</p>
     </section></div>
-    <div class="col-lg-5"><section class="panel"><h2>Visualisation</h2><p class="muted">Répartition des paramètres utilisés dans la simulation.</p><canvas id="breakdownChart" height="240"></canvas><div class="alert alert-warning mt-3 small mb-0">La simulation suppose que les paramètres saisis sont corrects et que les conditions de décote/surcote sont réunies.</div></section></div>
+
+    <!-- Trimestres -->
+    <div class="col-lg-6"><section class="panel h-100">
+      <h2>2 · Durée d'assurance</h2>
+      <table class="table table-sm align-middle mt-3"><tbody>
+        <tr><th>Trimestres cotisés (régime général)</th><td class="text-end" th:text="${r.trimestresCotises}"></td></tr>
+        <tr><th>Trimestres assimilés (chômage, service national…)</th><td class="text-end" th:text="${r.trimestresAssimiles}"></td></tr>
+        <tr><th>Trimestres autres régimes</th><td class="text-end" th:text="${r.trimestresAutresRegimes}"></td></tr>
+        <tr><th>Majoration de durée pour enfants</th><td class="text-end" th:text="${r.trimestresMajorationEnfants}"></td></tr>
+        <tr class="table-light"><th>Total tous régimes</th><td class="text-end fw-bold" th:text="${r.trimestresTousRegimes} + ' / ' + ${r.dureeRequise}"></td></tr>
+        <tr><th>Trimestres cotisés ou réputés cotisés (carrière longue)</th><td class="text-end" th:text="${r.trimestresReputesCotises}"></td></tr>
+        <tr><th>Trimestres manquants</th><td class="text-end" th:text="${r.trimestresManquants}"></td></tr>
+      </tbody></table>
+      <div class="progress" role="progressbar" style="height:12px">
+        <div class="progress-bar" th:style="'width:' + ${r.trimestresTousRegimes >= r.dureeRequise ? 100 : (r.trimestresTousRegimes * 100 / r.dureeRequise)} + '%'"></div>
+      </div>
+    </section></div>
+
+    <!-- Calcul de la base -->
+    <div class="col-lg-6"><section class="panel h-100">
+      <h2>3 · Retraite de base (Assurance retraite)</h2>
+      <p class="formula mt-3">Pension = SAM × Taux × (Trimestres régime général / Durée requise)</p>
+      <table class="table table-sm align-middle"><tbody>
+        <tr><th>SAM (<span th:text="${r.anneesRetenues}"></span> meilleures années)</th><td class="text-end" th:text="${@fmt.eur(r.sam)}"></td></tr>
+        <tr><th>Taux de liquidation</th><td class="text-end" th:text="${@fmt.pct(r.tauxPct)}"></td></tr>
+        <tr th:if="${r.trimestresDecote > 0}"><th>Décote</th><td class="text-end" th:text="${r.trimestresDecote} + ' trim. × 0,625 = −' + ${@fmt.pct(r.decotePct)}"></td></tr>
+        <tr><th>Proratisation</th><td class="text-end" th:text="${@fmt.pct(r.prorataPct)}"></td></tr>
+        <tr><th>Pension calculée</th><td class="text-end" th:text="${@fmt.eur(r.baseAvantPlafond)} + ' / an'"></td></tr>
+        <tr th:if="${r.basePlafonnee}"><th>Plafond (50 % du PASS)</th><td class="text-end" th:text="${@fmt.eur(r.plafondPensionBase)}"></td></tr>
+        <tr th:if="${r.trimestresSurcote > 0}"><th>Surcote</th><td class="text-end" th:text="${r.trimestresSurcote} + ' trim. × 1,25 = +' + ${@fmt.pct(r.surcotePct)}"></td></tr>
+        <tr th:if="${r.majorationEnfantsBase.signum() > 0}"><th>Majoration 3 enfants (+10 %)</th><td class="text-end" th:text="${@fmt.eur(r.majorationEnfantsBase)}"></td></tr>
+        <tr th:if="${r.complementMico.signum() > 0}"><th>Minimum contributif</th><td class="text-end" th:text="'+ ' + ${@fmt.eur(r.complementMico)}"></td></tr>
+        <tr class="table-light"><th>Retraite de base</th><td class="text-end fw-bold" th:text="${@fmt.eur(r.baseAnnuelle)} + ' / an · ' + ${@fmt.eur(r.baseMensuelle)} + ' / mois'"></td></tr>
+      </tbody></table>
+      <p class="small muted mb-0" th:text="'Taux plein : ' + ${r.motifTauxPlein}"></p>
+      <p class="small muted mb-0" th:text="${r.micoDetail}"></p>
+    </section></div>
+
+    <!-- Complémentaire -->
+    <div class="col-lg-6"><section class="panel h-100">
+      <h2>4 · Retraite complémentaire Agirc-Arrco</h2>
+      <p class="formula mt-3">Pension = Nombre de points × Valeur de service du point</p>
+      <table class="table table-sm align-middle"><tbody>
+        <tr><th>Points du relevé</th><td class="text-end" th:text="${@fmt.num(r.pointsDeclares)}"></td></tr>
+        <tr><th>Points calculés (années sans points saisis)</th><td class="text-end" th:text="${@fmt.num(r.pointsCalcules)}"></td></tr>
+        <tr><th>Total des points</th><td class="text-end fw-semibold" th:text="${@fmt.num(r.pointsTotal)}"></td></tr>
+        <tr><th>Valeur du point</th><td class="text-end" th:text="${r.valeurPoint} + ' € (au ' + ${@fmt.date(r.dateValeurPoint)} + ')'"></td></tr>
+        <tr th:if="${!r.tauxPlein}"><th>Coefficient d'anticipation</th><td class="text-end" th:text="${r.coefficientAnticipation}"></td></tr>
+        <tr th:if="${r.majorationEnfantsAgirc.signum() > 0}"><th>Majoration enfants</th><td class="text-end" th:text="${@fmt.eur(r.majorationEnfantsAgirc)}"></td></tr>
+        <tr class="table-light"><th>Retraite complémentaire</th><td class="text-end fw-bold" th:text="${@fmt.eur(r.complementaireAnnuelle)} + ' / an · ' + ${@fmt.eur(r.complementaireMensuelle)} + ' / mois'"></td></tr>
+      </tbody></table>
+      <h3 class="mt-3">Du brut au net</h3>
+      <table class="table table-sm align-middle mb-0"><tbody>
+        <tr><th>Prélèvements sur la base</th><td class="text-end" th:text="${@fmt.pct(r.tauxPrelevementsBasePct)}"></td></tr>
+        <tr><th>Prélèvements sur la complémentaire</th><td class="text-end" th:text="${@fmt.pct(r.tauxPrelevementsComplPct)}"></td></tr>
+        <tr><th>Total net mensuel</th><td class="text-end fw-bold" th:text="${@fmt.eur(r.totalNetMensuel)}"></td></tr>
+        <tr th:if="${r.tauxRemplacementPct != null}"><th>Taux de remplacement brut</th><td class="text-end" th:text="${@fmt.pct(r.tauxRemplacementPct)} + ' du dernier salaire annuel (' + ${@fmt.eur0(r.dernierSalaireAnnuel)} + ')'"></td></tr>
+      </tbody></table>
+    </section></div>
+
+    <!-- Scénarios -->
+    <div class="col-12"><section class="panel">
+      <h2>5 · Et si je partais à une autre date ?</h2>
+      <p class="muted">Comparaison des principales dates de départ possibles (mêmes données de carrière).</p>
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-7"><div class="table-responsive"><table class="table table-sm align-middle">
+          <thead><tr><th>Scénario</th><th>Date</th><th>Âge</th><th>Trim.</th><th>Situation</th><th class="text-end">Brut / mois</th><th class="text-end">Net / mois</th></tr></thead>
+          <tbody><tr th:each="s : ${r.scenarios}" th:classappend="${s.choisi} ? 'table-primary' : ''">
+            <td th:text="${s.libelle}"></td><td th:text="${@fmt.date(s.date)}"></td><td th:text="${s.age}"></td>
+            <td th:text="${s.trimestres}"></td><td class="small" th:text="${s.motif}"></td>
+            <td class="text-end" th:text="${s.possible} ? ${@fmt.eur(s.totalMensuel)} : '—'"></td>
+            <td class="text-end" th:text="${s.possible} ? ${@fmt.eur(s.netMensuel)} : '—'"></td>
+          </tr></tbody></table></div></div>
+        <div class="col-lg-5"><canvas id="scenarioChart" height="230"></canvas></div>
+      </div>
+    </section></div>
+
+    <!-- Réversion -->
+    <div class="col-12" th:if="${r.reversionCalculee}"><section class="panel">
+      <h2>6 · Pension de réversion (conjoint décédé)</h2>
+      <div class="row g-3 mt-1">
+        <div class="col-md-4"><div class="metric"><div class="metric-label">Réversion régime général</div><div class="metric-value small-value" th:text="${@fmt.eur(r.reversionBaseAnnuelle)} + ' / an'"></div><div class="metric-note">54 %, sous condition de ressources</div></div></div>
+        <div class="col-md-4"><div class="metric"><div class="metric-label">Réversion Agirc-Arrco</div><div class="metric-value small-value" th:text="${@fmt.eur(r.reversionAgircAnnuelle)} + ' / an'"></div><div class="metric-note">60 % des points, sans condition de ressources</div></div></div>
+        <div class="col-md-4"><div class="metric"><div class="metric-label">Total réversion</div><div class="metric-value small-value" th:text="${@fmt.eur(r.reversionMensuelle)} + ' / mois'"></div><div class="metric-note">S'ajoute aux droits propres</div></div></div>
+      </div>
+      <ul class="small mt-3 mb-0"><li th:each="l : ${r.reversionDetail}" th:text="${l}"></li></ul>
+    </section></div>
+
+    <!-- Étapes -->
+    <div class="col-lg-7"><section class="panel h-100">
+      <h2>Calcul pas à pas</h2>
+      <ol class="explanations mt-3"><li th:each="e : ${r.etapes}" th:text="${e}"></li></ol>
+    </section></div>
+    <div class="col-lg-5"><section class="panel h-100">
+      <h2>Salaires revalorisés</h2>
+      <p class="muted small">En bleu : années retenues dans le SAM.</p>
+      <canvas id="samChart" height="260"></canvas>
+    </section></div>
+
+    <!-- Détail -->
+    <div class="col-12"><section class="panel">
+      <h2>Détail de la carrière année par année</h2>
+      <div class="table-responsive mt-3"><table class="table table-sm table-hover align-middle small detail-table">
+        <thead><tr><th>Année</th><th class="text-end">Revenu</th><th class="text-end">PASS</th><th class="text-end">Retenu (€)</th>
+          <th class="text-end">Coef.</th><th class="text-end">Revalorisé</th><th class="text-center">SAM</th>
+          <th class="text-center">Trim. cotisés</th><th class="text-center">Assimilés</th><th class="text-end">Points</th><th>Remarque</th></tr></thead>
+        <tbody><tr th:each="a : ${r.annees}" th:classappend="${a.alerte != null} ? 'table-warning' : (${a.retenuPourSam} ? 'row-sam' : '')">
+          <td th:text="${a.annee} + (${a.projetee} ? ' *' : '')"></td>
+          <td class="text-end" th:text="${a.revenu != null} ? (${@fmt.num(a.revenu)} + ' ' + ${a.devise}) : '—'"></td>
+          <td class="text-end" th:text="${@fmt.num(a.plafond)}"></td>
+          <td class="text-end" th:text="${@fmt.num(a.revenuRetenuEur)} + (${a.plafonne} ? ' ▲' : '')"></td>
+          <td class="text-end" th:text="${a.coefficient}"></td>
+          <td class="text-end" th:text="${@fmt.num(a.revenuRevalorise)}"></td>
+          <td class="text-center" th:text="${a.retenuPourSam} ? '✔' : (${a.exclueSam} ? 'exclue' : '')"></td>
+          <td class="text-center" th:text="${a.trimestresCotises} + (${a.trimestresCalcules != null and a.trimestresCalcules != a.trimestresCotises} ? (' (calcul : ' + ${a.trimestresCalcules} + ')') : '')"></td>
+          <td class="text-center" th:text="${a.trimestresAssimiles > 0} ? (${a.trimestresAssimiles} + ' (' + ${a.detailAssimiles} + ')') : ''"></td>
+          <td class="text-end" th:text="${@fmt.num(a.points)} + (${a.pointsCalcules} ? ' (calc.)' : '')"></td>
+          <td class="small" th:text="${a.alerte}"></td>
+        </tr></tbody></table></div>
+      <p class="small muted mb-0">▲ revenu plafonné au PASS · * année projetée · « exclue » : l'année de départ ne compte pas dans le SAM.</p>
+    </section></div>
+
+    <div class="col-12"><section class="panel">
+      <h2>Limites de l'estimation</h2>
+      <ul class="small mb-2"><li th:each="l : ${r.limites}" th:text="${l}"></li></ul>
+      <p class="small muted mb-0">Paramètres officiels datés (PASS, seuils, coefficients Cnav, valeurs du point…) : fichiers <code>src/main/resources/parametres</code>. Estimation pédagogique, non opposable : à confronter au simulateur officiel M@rel (info-retraite.fr).</p>
+    </section></div>
   </div>
-  <section class="panel mt-4"><h2>À vérifier avant toute décision</h2><ul><li>Âge légal de départ applicable à l'année et au trimestre de naissance.</li><li>Durée d'assurance requise pour le taux plein de la génération.</li><li>Trimestres cotisés, assimilés et majorations de durée d'assurance.</li><li>Calcul du SAM à partir des salaires annuels revalorisés et plafonnés.</li><li>Conditions précises de décote, surcote et majoration pour enfants.</li></ul><a class="btn btn-primary mt-2" href="/">Effectuer une autre simulation</a></section>
-  <p class="small muted mt-4">Retraite+ est un prototype pédagogique. Pour une estimation opposable à votre situation, utilisez les services officiels de l'Assurance retraite.</p>
+  <a class="btn btn-primary mt-4 no-print" href="/">Effectuer une autre simulation</a>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:inline="javascript">
-const decote = Number([[${result.decotePercent}]]);
-const surcote = Number([[${result.surcotePercent}]]);
-const children = Number([[${result.childrenBonusPercent}]]);
-new Chart(document.getElementById('breakdownChart'), {
- type:'bar',
- data:{labels:['Décote','Surcote','Majoration enfants'],datasets:[{label:'Pourcentage',data:[decote,surcote,children],borderRadius:8}]},
- options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,title:{display:true,text:'Pourcentage (%)'}}}}
+const labels = /*[[${r.scenarios.![libelle]}]]*/ [];
+const base = /*[[${r.scenarios.![possible ? baseMensuel : 0]}]]*/ [];
+const compl = /*[[${r.scenarios.![possible ? complementaireMensuel : 0]}]]*/ [];
+new Chart(document.getElementById('scenarioChart'), {
+  type: 'bar',
+  data: {
+    labels: labels.map(l => l.replace(/ \(.*\)/, '')),
+    datasets: [
+      {label: 'Base', data: base.map(Number), backgroundColor: '#2457d6', borderRadius: 6, stack: 's'},
+      {label: 'Agirc-Arrco', data: compl.map(Number), backgroundColor: '#82a7ff', borderRadius: 6, stack: 's'}
+    ]
+  },
+  options: {plugins: {legend: {position: 'bottom'}}, scales: {y: {stacked: true, beginAtZero: true, title: {display: true, text: '€ brut / mois'}}, x: {stacked: true}}}
+});
+const annLabels = /*[[${r.annees.?[revenuRevalorise != null].![annee]}]]*/ [];
+const annValeurs = /*[[${r.annees.?[revenuRevalorise != null].![revenuRevalorise]}]]*/ [];
+const annSam = /*[[${r.annees.?[revenuRevalorise != null].![retenuPourSam]}]]*/ [];
+new Chart(document.getElementById('samChart'), {
+  type: 'bar',
+  data: {labels: annLabels,
+    datasets: [{label: 'Salaire revalorisé (€)', data: annValeurs.map(Number),
+      backgroundColor: annSam.map(b => b ? '#2457d6' : '#cfd8ea')}]},
+  options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}}}
 });
 </script>
 </body></html>

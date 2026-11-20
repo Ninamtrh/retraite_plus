@@ -1,0 +1,9 @@
+# Valeur d'achat (salaire de reference) du point Agirc-Arrco par annee de cotisation
+# Sert a calculer les points quand ils ne sont pas fournis (taux contractuels : T1 6,20 %, T2 17,00 %)
+annee;valeur
+2021;17.3982
+2022;17.4316
+2023;18.7669
+2024;19.6321
+2025;20.1877
+2026;20.1877

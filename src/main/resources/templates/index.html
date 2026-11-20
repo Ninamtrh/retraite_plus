@@ -7,38 +7,95 @@
   <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark app-nav"><div class="container"><a class="navbar-brand fw-bold" href="/">Retraite<span>+</span></a><span class="navbar-text">Simulateur pédagogique · Régime général</span></div></nav>
+<nav class="navbar navbar-dark app-nav"><div class="container">
+  <a class="navbar-brand fw-bold" href="/">Retraite<span>+</span></a>
+  <span class="navbar-text d-none d-md-inline">Régime général + Agirc-Arrco · salariés du privé</span>
+</div></nav>
 <main class="container py-5">
-  <div class="hero mb-4"><div class="eyebrow">VOTRE AVENIR, EN CLAIR</div><h1>Estimez votre retraite</h1><p class="mb-0">Renseignez votre situation pour obtenir une estimation expliquée de votre pension de base.</p></div>
-  <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-  <form th:action="@{/simuler}" th:object="${form}" method="post">
+  <div class="hero mb-4">
+    <div class="eyebrow">VOTRE AVENIR, EN CLAIR</div>
+    <h1>Estimez votre retraite</h1>
+    <p class="mb-3">Saisissez les informations de votre relevé de carrière : le simulateur détermine lui-même l'âge légal, la durée requise, les trimestres, le SAM, le taux, la complémentaire et les droits annexes.</p>
+    <a class="btn btn-light btn-sm fw-semibold" th:href="@{/exemple/ousmane}">Charger le cas pratique M. Ousmane</a>
+    <a class="btn btn-outline-light btn-sm ms-2" th:href="@{/modele-carriere.csv}">Télécharger le modèle CSV</a>
+  </div>
+
+  <div th:if="${infoMessage}" class="alert alert-info" th:text="${infoMessage}"></div>
+  <div th:if="${errorMessages}" class="alert alert-danger">
+    <strong>Vérifiez la saisie :</strong>
+    <ul class="mb-0"><li th:each="m : ${errorMessages}" th:text="${m}"></li></ul>
+  </div>
+
+  <form th:action="@{/simuler}" th:object="${form}" method="post" enctype="multipart/form-data">
     <div class="row g-4">
-      <div class="col-lg-6"><section class="panel h-100"><h2>01 · Votre profil</h2><p class="muted">Informations générales du salarié</p>
+      <!-- 01 Profil -->
+      <div class="col-lg-5"><section class="panel h-100">
+        <h2>01 · Le salarié</h2><p class="muted">Identité et date de départ envisagée</p>
         <div class="row g-3">
-          <div class="col-md-6"><label class="form-label">Prénom</label><input class="form-control" th:field="*{firstName}" required></div>
-          <div class="col-md-6"><label class="form-label">Nom</label><input class="form-control" th:field="*{lastName}" required></div>
-          <div class="col-md-6"><label class="form-label">Année de naissance</label><input type="number" min="1900" max="2026" class="form-control" th:field="*{birthYear}" required></div>
-          <div class="col-md-6"><label class="form-label">Trimestre de naissance</label><select class="form-select" th:field="*{birthQuarter}"><option value="1">1er trimestre</option><option value="2">2e trimestre</option><option value="3">3e trimestre</option><option value="4">4e trimestre</option></select></div>
-          <div class="col-md-6"><label class="form-label">Nombre d'enfants</label><input type="number" min="0" max="10" class="form-control" th:field="*{children}"></div>
-        </div></section></div>
-      <div class="col-lg-6"><section class="panel h-100"><h2>02 · Votre carrière</h2><p class="muted">Données nécessaires au calcul</p>
-        <div class="mb-3"><label class="form-label">Salaire annuel moyen (SAM) en €</label><input type="number" min="1" step="0.01" class="form-control" th:field="*{sam}" required><div class="form-text">À saisir après calcul des meilleures années revalorisées et plafonnées.</div></div>
-        <div class="row g-3">
-          <div class="col-md-6"><label class="form-label">Trimestres acquis</label><input type="number" min="1" max="200" class="form-control" th:field="*{acquiredQuarters}" required></div>
-          <div class="col-md-6"><label class="form-label">Trimestres requis</label><input type="number" min="1" max="200" class="form-control" th:field="*{requiredQuarters}" required></div>
-          <div class="col-md-6"><label class="form-label">Taux de liquidation</label><div class="input-group"><input type="number" min="0.01" max="0.50" step="0.001" class="form-control" th:field="*{liquidationRate}" required><span class="input-group-text">ex. 0,50</span></div><div class="form-text">0,50 correspond à 50 %.</div></div>
-          <div class="col-md-6"><label class="form-label">Trimestres manquants pour décote</label><input type="number" min="0" max="40" class="form-control" th:field="*{missingQuartersForDecote}"></div>
-        </div></section></div>
-      <div class="col-12"><section class="panel"><h2>03 · Scénario de départ</h2><p class="muted">Les trimestres de décote et de surcote sont des paramètres à justifier selon la situation réelle.</p>
-        <div class="row g-3 align-items-end">
-          <div class="col-md-4"><label class="form-label">Décote par trimestre (en taux)</label><input type="number" step="0.00001" min="0" max="0.05" class="form-control" th:field="*{decotePerQuarter}"><div class="form-text">Valeur pédagogique du TD : 0,00625 = 0,625 point.</div></div>
-          <div class="col-md-4"><label class="form-label">Trimestres éligibles à la surcote</label><input type="number" min="0" max="80" class="form-control" th:field="*{eligibleSurcoteQuarters}"></div>
-          <div class="col-md-4"><div class="form-check p-3 border rounded-3"><input class="form-check-input ms-0 me-2" type="checkbox" th:field="*{applyTenPercentChildrenBonus}"><label class="form-check-label">Appliquer la majoration de 10 % si conditions remplies (3 enfants ou plus)</label></div></div>
+          <div class="col-md-6"><label class="form-label">Prénom</label><input class="form-control" th:field="*{prenom}"></div>
+          <div class="col-md-6"><label class="form-label">Nom</label><input class="form-control" th:field="*{nom}"></div>
+          <div class="col-md-6"><label class="form-label">Date de naissance *</label><input type="date" class="form-control" th:field="*{dateNaissance}" required></div>
+          <div class="col-md-6"><label class="form-label">Sexe</label>
+            <select class="form-select" th:field="*{sexe}">
+              <option th:each="s : ${sexes}" th:value="${s}" th:text="${s.name() == 'HOMME'} ? 'Homme' : 'Femme'"></option>
+            </select><div class="form-text">Sert aux trimestres pour enfants.</div></div>
+          <div class="col-md-12"><label class="form-label">Date de départ envisagée *</label><input type="date" class="form-control" th:field="*{dateDepart}" required>
+            <div class="form-text">Une retraite prend effet le 1er jour d'un mois. Le simulateur indique si le départ est possible à cette date et compare d'autres dates.</div></div>
         </div>
-        <button class="btn btn-primary btn-lg mt-4" type="submit">Calculer mon estimation <span aria-hidden="true">→</span></button>
       </section></div>
+
+      <!-- 02 Carrière -->
+      <div class="col-lg-7"><section class="panel h-100">
+        <h2>02 · La carrière (relevé année par année)</h2>
+        <p class="muted mb-2">Une ligne par année et par période. Format : <code>annee;type;revenu;devise;trimestres;points</code></p>
+        <textarea class="form-control font-monospace small" rows="12" th:field="*{carriereCsv}"
+                  placeholder="1999;SALAIRE;173640;FRF;4;231.78&#10;2002;SALAIRE;28224;EUR;4;279.3&#10;1983;SERVICE_NATIONAL;;;3;&#10;2025;SALAIRE;5111;EUR;;"></textarea>
+        <details class="mt-2 small"><summary class="fw-semibold">Aide à la saisie</summary>
+          <ul class="mt-2 mb-0">
+            <li><b>type</b> : SALAIRE, SERVICE_NATIONAL, CHOMAGE, MALADIE, MATERNITE, INVALIDITE, AUTRE.</li>
+            <li><b>revenu</b> : revenu soumis à cotisation ; <b>devise</b> FRF avant 2002, EUR ensuite (déduite si vide).</li>
+            <li><b>trimestres</b> : ceux du relevé ; laissez vide pour un calcul automatique (seuil de 150 h de SMIC, 200 h avant 2014). Un écart avec le revenu est signalé.</li>
+            <li><b>points</b> : points Agirc-Arrco de l'année ; vide = calcul automatique à partir du salaire (à partir de 2021).</li>
+            <li>Plusieurs lignes pour une même année sont additionnées (plusieurs employeurs, période assimilée…). Copier-coller depuis Excel accepté (tabulations).</li>
+          </ul></details>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6"><label class="form-label">… ou importer un fichier CSV</label><input type="file" name="fichierCarriere" accept=".csv,.txt" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label">Trimestres autres régimes</label><input type="number" min="0" max="200" class="form-control" th:field="*{trimestresAutresRegimes}"><div class="form-text">Fonction publique, indépendants…</div></div>
+          <div class="col-md-3"><label class="form-label">Salaire projeté (€/an)</label><input type="number" min="0" step="0.01" class="form-control" th:field="*{salaireProjete}"><div class="form-text">Prolonge la carrière jusqu'au départ.</div></div>
+        </div>
+      </section></div>
+
+      <!-- 03 Famille / options -->
+      <div class="col-lg-6"><section class="panel h-100">
+        <h2>03 · Famille et situation</h2><p class="muted">Droits liés aux enfants, taux plein particulier, fiscalité</p>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Nombre d'enfants</label><input type="number" min="0" max="20" class="form-control" th:field="*{nombreEnfants}"><div class="form-text">≥ 3 enfants : majoration de 10 %.</div></div>
+          <div class="col-md-6"><label class="form-label">Trimestres de majoration enfants</label><input type="number" min="0" max="100" class="form-control" th:field="*{trimestresMajorationEnfants}"><div class="form-text">Vide = automatique (8 par enfant pour la mère, 0 pour le père).</div></div>
+          <div class="col-md-6"><label class="form-label">Taux de CSG (revenu fiscal)</label>
+            <select class="form-select" th:field="*{tauxCsg}"><option th:each="t : ${tauxCsgListe}" th:value="${t}" th:text="${t.libelle}"></option></select></div>
+          <div class="col-md-6 d-flex align-items-end"><div class="form-check p-3 border rounded-3 w-100">
+            <input class="form-check-input ms-0 me-2" type="checkbox" th:field="*{tauxPleinParStatut}">
+            <label class="form-check-label small" th:for="${#ids.prev('tauxPleinParStatut')}">Taux plein par statut (inaptitude, invalidité, handicap…)</label></div></div>
+        </div>
+      </section></div>
+
+      <!-- 04 Réversion -->
+      <div class="col-lg-6"><section class="panel h-100">
+        <h2>04 · Conjoint décédé (réversion)</h2><p class="muted">À remplir si le salarié est veuf ou veuve</p>
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" th:field="*{conjointDecede}"><label class="form-check-label fw-semibold" th:for="${#ids.prev('conjointDecede')}">Le conjoint (marié) est décédé</label></div>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Retraite de base du conjoint (€/an)</label><input type="number" min="0" step="0.01" class="form-control" th:field="*{pensionBaseConjoint}"><div class="form-text">Perçue ou qu'il aurait perçue.</div></div>
+          <div class="col-md-6"><label class="form-label">Points Agirc-Arrco du conjoint</label><input type="number" min="0" step="0.01" class="form-control" th:field="*{pointsConjoint}"></div>
+          <div class="col-md-6"><label class="form-label">Autres ressources (€/an)</label><input type="number" min="0" step="0.01" class="form-control" th:field="*{autresRessources}"><div class="form-text">Hors retraites calculées ici.</div></div>
+          <div class="col-md-6 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" th:field="*{remarie}"><label class="form-check-label" th:for="${#ids.prev('remarie')}">Remarié(e)</label></div></div>
+        </div>
+      </section></div>
+
+      <div class="col-12 text-end">
+        <button class="btn btn-primary btn-lg" type="submit">Calculer l'estimation <span aria-hidden="true">→</span></button>
+      </div>
     </div>
   </form>
-  <p class="small muted mt-4">Outil pédagogique de groupe. Il ne constitue pas une estimation officielle ni un conseil personnalisé.</p>
+  <p class="small muted mt-4">Outil pédagogique de groupe (TD). Il ne constitue pas une estimation officielle : pour une décision, utilisez info-retraite.fr ou un rendez-vous Assurance retraite.</p>
 </main>
 </body></html>
